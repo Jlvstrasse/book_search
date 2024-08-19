@@ -1,14 +1,19 @@
-// see SignupForm.js for comments
 import { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 
-import { loginUser } from '../utils/API';
+// Import useMutation from Apollo Client and the LOGIN_USER mutation
+import { useMutation } from '@apollo/client';
+import { LOGIN_USER } from '../utils/mutations';
+
 import Auth from '../utils/auth';
 
-const LoginForm = () => {
+const LoginForm = ({ handleModalClose }) => {  // Added handleModalClose as a prop
   const [userFormData, setUserFormData] = useState({ email: '', password: '' });
   const [validated] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+
+  // Setup the LOGIN_USER mutation with useMutation hook
+  const [loginUser, { error }] = useMutation(LOGIN_USER);
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -18,7 +23,7 @@ const LoginForm = () => {
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
-    // check if form has everything (as per react-bootstrap docs)
+    // Check if form has everything (as per react-bootstrap docs)
     const form = event.currentTarget;
     if (form.checkValidity() === false) {
       event.preventDefault();
@@ -26,15 +31,20 @@ const LoginForm = () => {
     }
 
     try {
-      const response = await loginUser(userFormData);
+      // Call the loginUser mutation instead of the REST API
+      const { data } = await loginUser({
+        variables: { ...userFormData },
+      });
 
-      if (!response.ok) {
+      if (error) {
         throw new Error('something went wrong!');
       }
 
-      const { token, user } = await response.json();
+      const { token, user } = data.login;
       console.log(user);
       Auth.login(token);
+      
+      handleModalClose();  // Close the modal after successful login
     } catch (err) {
       console.error(err);
       setShowAlert(true);
@@ -90,3 +100,4 @@ const LoginForm = () => {
 };
 
 export default LoginForm;
+
